@@ -1,88 +1,195 @@
-import tkinter as tk
-from datetime import datetime
+import flet as ft
+from datetime import datetime, timedelta
 import time
 import threading
 
+# --- Funções Auxiliares ---
+
 def formatar_data(dt):
-    return dt.strftime("%b %d %Y %I:%M:%S %p").upper().upper()
+    """Formata um objeto datetime no estilo do painel DeLorean."""
+    if not dt:
+        # Retorna um placeholder se a data for Nula
+        return "--- -- ---- --:--:-- --"
+    # Formato: MÊS DIA ANO HORA:MINUTO:SEGUNDO AM/PM
+    return dt.strftime("%b %d %Y %I:%M:%S %p").upper()
 
-class PainelDelorean:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("Painel DeLorean - Back to the Future")
-        self.root.configure(bg="black")
-        self.labels = {}
+# --- Classe Principal da Aplicação ---
 
-        
-        for i, (label, cor) in enumerate([
-            ("DESTINATION TIME", "#00FF00"),
-            ("PRESENT TIME", "#FF0000"),
-            ("LAST TIME DEPARTED", "#FFFF00")
-        ]):
-            tk.Label(root, text=label, fg=cor, bg="black",
-                    font=("Courier", 16, "bold")).grid(row=i*2, column=0, sticky="w", padx=10)
-            lbl = tk.Label(root, text="00:00:00", fg=cor, bg="black",
-                        font=("DS-Digital", 28, "bold"))  # Fonte digital
-            lbl.grid(row=i*2+1, column=0, sticky="w", padx=10)
-            self.labels[label] = lbl
+class PainelDeloreanApp:
+    def __init__(self, page: ft.Page):
+        self.page = page
+        self.page.title = "Painel DeLorean - De Volta para o Futuro"
+        self.page.bgcolor = ft.Colors.BLACK
+        self.page.vertical_alignment = ft.MainAxisAlignment.CENTER
+        self.page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+        self.page.theme_mode = ft.ThemeMode.DARK
+        self.page.fonts = {
+            "DSEG7": "fonts/DSEG7Classic-Bold.ttf", 
+        }
+        self.font_family = "DSEG7" if "DSEG7" in self.page.fonts else "monospace"
 
-
-        # Campos para lembrete
-        tk.Label(root, text="Lembrete:", fg="white", bg="black").grid(row=6, column=0, sticky="w", padx=10, pady=(20,0))
-        self.lembrete_entry = tk.Entry(root, width=30)
-        self.lembrete_entry.grid(row=7, column=0, sticky="w", padx=10)
-
-        tk.Label(root, text="Horário (HH:MM):", fg="white", bg="black").grid(row=8, column=0, sticky="w", padx=10)
-        self.horario_entry = tk.Entry(root, width=10)
-        self.horario_entry.grid(row=9, column=0, sticky="w", padx=10)
-
-        tk.Button(root, text="Adicionar Lembrete", command=self.adicionar_lembrete).grid(row=10, column=0, sticky="w", padx=10, pady=5)
-
+        # --- Estado da Aplicação ---
+        self.destination_time = datetime.now()
+        self.present_time = datetime.now()
+        self.last_departed_time = datetime.now()
         self.lembretes = []
+        self.lock = threading.Lock()
+        self.construir_layout()
+        self.thread = threading.Thread(target=self.atualizar_tempos_em_loop, daemon=True)
+        self.thread.start()
 
-        self.destination_time = datetime(2025, 10, 21, 16, 29)
-        self.last_departed_time = None
+    def criar_display_tempo(self, titulo: str, cor_texto: str, valor_inicial: str) -> ft.Column:
+        """Cria um bloco de display de tempo padronizado."""
+        return ft.Column(
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            controls=[
+                ft.Text(titulo, color=cor_texto, size=18, weight=ft.FontWeight.BOLD),
+                ft.Text(
+                    valor_inicial,
+                    font_family=self.font_family,
+                    color=cor_texto,
+                    size=40,
+                ),
+            ]
+        )
 
-        self.atualizar_tempos()
+    def construir_layout(self):
+        """Cria e organiza todos os controles na página."""
+        # Displays de tempo
+        self.display_destination = self.criar_display_tempo("DESTINATION TIME", ft.Colors.GREEN_ACCENT_400, formatar_data(self.destination_time))
+        self.display_present = self.criar_display_tempo("PRESENT TIME", ft.Colors.RED_ACCENT_400, formatar_data(self.present_time))
+        self.display_last_departed = self.criar_display_tempo("LAST TIME DEPARTED", ft.Colors.YELLOW_ACCENT_400, formatar_data(self.last_departed_time))
 
-    def adicionar_lembrete(self):
-        texto = self.lembrete_entry.get()
-        horario = self.horario_entry.get()
+        # Campos de entrada para lembretes
+        self.lembrete_input = ft.TextField(
+            label="Adicionar Lembrete", 
+            width=300, 
+            border_color=ft.Colors.BLUE_GREY_400
+        )
+        self.horario_input = ft.TextField(
+            label="Horário (HH:MM)", 
+            width=150, 
+            border_color=ft.Colors.BLUE_GREY_400
+        )
+        
+        # Botão para adicionar lembrete
+        add_button = ft.ElevatedButton(
+            "Adicionar",
+            icon=ft.Icons.ADD_ALARM, # CORRIGIDO: ft.Icons
+            on_click=self.adicionar_lembrete_click,
+            bgcolor=ft.Colors.BLUE_GREY_700,
+            color=ft.Colors.WHITE
+        )
+
+        # Layout principal
+        self.page.add(
+            ft.Column(
+                spacing=25,
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                controls=[
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        spacing=40,
+                        controls=[
+                            self.display_destination,
+                            self.display_present,
+                            self.display_last_departed,
+                        ]
+                    ),
+                    ft.Row(
+                        alignment=ft.MainAxisAlignment.CENTER,
+                        spacing=10,
+                        controls=[
+                            self.lembrete_input,
+                            self.horario_input,
+                            add_button,
+                        ]
+                    )
+                ]
+            )
+        )
+        self.page.update()
+
+    def adicionar_lembrete_click(self, e):
+        """Callback para o botão de adicionar lembrete."""
+        texto_lembrete = self.lembrete_input.value
+        horario_str = self.horario_input.value
+
+        if not texto_lembrete or not horario_str:
+            self.mostrar_dialogo("Erro", "Preencha o lembrete e o horário.")
+            return
+
         try:
-            hora, minuto = map(int, horario.split(":"))
+            hora, minuto = map(int, horario_str.split(":"))
             agora = datetime.now()
-            lembrete_time = agora.replace(hour=hora, minute=minuto, second=0, microsecond=0)
-            if lembrete_time < agora:
-                lembrete_time = lembrete_time.replace(day=agora.day + 1)
-            self.lembretes.append((lembrete_time, texto))
-            self.lembrete_entry.delete(0, tk.END)
-            self.horario_entry.delete(0, tk.END)
-        except Exception:
-            tk.messagebox.showerror("Erro", "Horário inválido. Use o formato HH:MM.")
+            tempo_lembrete = agora.replace(hour=hora, minute=minuto, second=0, microsecond=0)
 
-    def atualizar_tempos(self):
-        def loop():
-            while True:
-                now = datetime.now()
-                self.labels["PRESENT TIME"].config(text=formatar_data(now))
-                self.labels["DESTINATION TIME"].config(text=formatar_data(self.destination_time))
+            if tempo_lembrete < agora:
+                tempo_lembrete += timedelta(days=1)
+            
+            with self.lock:
+                self.lembretes.append((tempo_lembrete, texto_lembrete))
 
-                if self.last_departed_time:
-                    self.labels["LAST TIME DEPARTED"].config(text=formatar_data(self.last_departed_time))
+            self.lembrete_input.value = ""
+            self.horario_input.value = ""
+            self.page.update()
+            self.mostrar_dialogo("Sucesso", f"Lembrete '{texto_lembrete}' adicionado para as {horario_str}.")
 
-                # Verifica lembretes
-                for lembrete in self.lembretes[:]:
-                    lembrete_time, texto = lembrete
-                    if now >= lembrete_time:
-                        self.root.after(0, lambda t=texto: tk.messagebox.showinfo("Lembrete", t))
-                        self.lembretes.remove(lembrete)
-                time.sleep(1)
+        except ValueError:
+            self.mostrar_dialogo("Erro de Formato", "Use o formato de horário HH:MM.")
 
-        t = threading.Thread(target=loop, daemon=True)
-        t.start()
+    def mostrar_dialogo(self, titulo: str, conteudo: str):
+        """Exibe um diálogo de alerta na tela de forma segura a partir de threads."""
+        def fechar_dialogo(e):
+            self.page.dialog.open = False
+            self.page.update()
 
-# Cria janela
-root = tk.Tk()
-import tkinter.messagebox  # Necessário para messagebox
-app = PainelDelorean(root)
-root.mainloop()
+        dlg = ft.AlertDialog(
+            modal=True,
+            title=ft.Text(titulo),
+            content=ft.Text(conteudo),
+            actions=[
+                ft.TextButton("Ok", on_click=fechar_dialogo)
+            ],
+            actions_alignment=ft.MainAxisAlignment.END,
+        )
+        self.page.dialog = dlg
+        self.page.dialog.open = True
+        self.page.update()
+
+    def atualizar_tempos_em_loop(self):
+        """Loop principal que roda em uma thread separada para atualizar a UI."""
+        while True:
+            try:
+                agora = datetime.now()
+                
+                # Atualiza a hora atual
+                self.display_present.controls[1].value = formatar_data(agora)
+                
+                # Verifica se há lembretes para disparar
+                lembretes_a_remover = []
+                with self.lock:
+                    for lembrete in self.lembretes:
+                        tempo_lembrete, texto = lembrete
+                        if agora >= tempo_lembrete:
+                            self.page.run_threadsafe(self.mostrar_dialogo, "Lembrete!", texto)
+                            lembretes_a_remover.append(lembrete)
+                
+                if lembretes_a_remover:
+                    with self.lock:
+                        for lembrete in lembretes_a_remover:
+                            self.lembretes.remove(lembrete)
+
+                self.page.update()
+            except Exception as e:
+                print(f"Erro no loop de atualização: {e}")
+            
+            time.sleep(1)
+
+# --- Ponto de Entrada da Aplicação ---
+def main(page: ft.Page):
+    PainelDeloreanApp(page)
+
+if __name__ == "__main__":
+    # Certifique-se de ter uma pasta 'assets' no mesmo diretório do seu script.
+    ft.app(target=main, assets_dir="assets")
