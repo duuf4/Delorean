@@ -194,3 +194,6 @@ def main(page: ft.Page):
 if __name__ == "__main__":
     # Certifique-se de ter uma pasta 'assets' no mesmo diretório do seu script.
     ft.app(target=main, assets_dir="assets")
+
+
+
