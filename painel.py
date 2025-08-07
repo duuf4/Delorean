@@ -4,7 +4,7 @@ import time
 import threading
 
 def formatar_data(dt):
-    return dt.strftime("%b %d %Y %I:%M:%S %p").upper()
+    return dt.strftime("%b %d %Y %I:%M:%S %p").upper().upper()
 
 class PainelDelorean:
     def __init__(self, root):
@@ -14,17 +14,30 @@ class PainelDelorean:
 
         self.labels = {}
 
+        # for i, (label, cor) in enumerate([
+        #     ("DESTINATION TIME", "#00FF00"),
+        #     ("PRESENT TIME", "#FF0000"),
+        #     ("LAST TIME DEPARTED", "#FFFF00")
+        # ]):
+        #     tk.Label(root, text=label, fg=cor, bg="black",
+        #              font=("Courier", 16, "bold")).grid(row=i*2, column=0, sticky="w", padx=10)
+        #     lbl = tk.Label(root, text="--- -- ---- --:-- --", fg=cor, bg="black",
+        #                    font=("DS-Digital", 28, "bold"))  # Fonte digital
+        #     lbl.grid(row=i*2+1, column=0, sticky="w", padx=10)
+        #     self.labels[label] = lbl
+
         for i, (label, cor) in enumerate([
             ("DESTINATION TIME", "#00FF00"),
             ("PRESENT TIME", "#FF0000"),
             ("LAST TIME DEPARTED", "#FFFF00")
         ]):
             tk.Label(root, text=label, fg=cor, bg="black",
-                     font=("Courier", 16, "bold")).grid(row=i*2, column=0, sticky="w", padx=10)
-            lbl = tk.Label(root, text="--- -- ---- --:-- --", fg=cor, bg="black",
-                           font=("DS-Digital", 28, "bold"))  # Fonte digital
+                    font=("Courier", 16, "bold")).grid(row=i*2, column=0, sticky="w", padx=10)
+            lbl = tk.Label(root, text="00:00:00", fg=cor, bg="black",
+                        font=("DS-Digital", 28, "bold"))  # Fonte digital
             lbl.grid(row=i*2+1, column=0, sticky="w", padx=10)
             self.labels[label] = lbl
+
 
         # Campos para lembrete
         tk.Label(root, text="Lembrete:", fg="white", bg="black").grid(row=6, column=0, sticky="w", padx=10, pady=(20,0))
