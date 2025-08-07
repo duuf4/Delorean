@@ -11,21 +11,9 @@ class PainelDelorean:
         self.root = root
         self.root.title("Painel DeLorean - Back to the Future")
         self.root.configure(bg="black")
-
         self.labels = {}
 
-        # for i, (label, cor) in enumerate([
-        #     ("DESTINATION TIME", "#00FF00"),
-        #     ("PRESENT TIME", "#FF0000"),
-        #     ("LAST TIME DEPARTED", "#FFFF00")
-        # ]):
-        #     tk.Label(root, text=label, fg=cor, bg="black",
-        #              font=("Courier", 16, "bold")).grid(row=i*2, column=0, sticky="w", padx=10)
-        #     lbl = tk.Label(root, text="--- -- ---- --:-- --", fg=cor, bg="black",
-        #                    font=("DS-Digital", 28, "bold"))  # Fonte digital
-        #     lbl.grid(row=i*2+1, column=0, sticky="w", padx=10)
-        #     self.labels[label] = lbl
-
+        
         for i, (label, cor) in enumerate([
             ("DESTINATION TIME", "#00FF00"),
             ("PRESENT TIME", "#FF0000"),
