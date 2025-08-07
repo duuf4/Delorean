@@ -39,19 +39,29 @@ class PainelDeloreanApp:
         self.thread = threading.Thread(target=self.atualizar_tempos_em_loop, daemon=True)
         self.thread.start()
 
-    def criar_display_tempo(self, titulo: str, cor_texto: str, valor_inicial: str) -> ft.Column:
-        """Cria um bloco de display de tempo padronizado."""
-        return ft.Column(
-            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-            controls=[
-                ft.Text(titulo, color=cor_texto, size=18, weight=ft.FontWeight.BOLD),
-                ft.Text(
-                    valor_inicial,
-                    font_family=self.font_family,
-                    color=cor_texto,
-                    size=40,
-                ),
-            ]
+    def criar_display_tempo(self, titulo: str, cor_texto: str, valor_inicial: str) -> ft.Container:
+        """Cria um bloco de display de tempo padronizado com destaque visual."""
+        return ft.Container(
+            content=ft.Column(
+                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                controls=[
+                    ft.Text(titulo, color=cor_texto, size=20, weight=ft.FontWeight.BOLD, font_family="monospace"),
+                    ft.Text(
+                        valor_inicial,
+                        font_family=self.font_family,
+                        color=cor_texto,
+                        size=48,
+                        weight=ft.FontWeight.W_900,
+                    ),
+                ]
+            ),
+            bgcolor="#222222",
+            border=ft.border.all(3, cor_texto),
+            border_radius=10,
+            padding=20,
+            margin=10,
+            width=340,
+            alignment=ft.alignment.center,
         )
 
     def construir_layout(self):
@@ -82,31 +92,49 @@ class PainelDeloreanApp:
             color=ft.Colors.WHITE
         )
 
-        # Layout principal
+        # Layout principal ajustado
         self.page.add(
-            ft.Column(
-                spacing=25,
-                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
-                controls=[
-                    ft.Row(
-                        alignment=ft.MainAxisAlignment.CENTER,
-                        spacing=40,
-                        controls=[
-                            self.display_destination,
-                            self.display_present,
-                            self.display_last_departed,
-                        ]
-                    ),
-                    ft.Row(
-                        alignment=ft.MainAxisAlignment.CENTER,
-                        spacing=10,
-                        controls=[
-                            self.lembrete_input,
-                            self.horario_input,
-                            add_button,
-                        ]
-                    )
-                ]
+            ft.Container(
+                content=ft.Column(
+                    spacing=40,
+                    horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                    controls=[
+                        ft.Row(
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            spacing=30,
+                            controls=[
+                                self.display_destination,
+                                self.display_present,
+                                self.display_last_departed,
+                            ]
+                        ),
+                        ft.Container(
+                            content=ft.Column(
+                                controls=[
+                                    ft.Text("LEMBRETES", size=18, color=ft.Colors.BLUE_GREY_200, weight=ft.FontWeight.BOLD, font_family="monospace"),
+                                    ft.Row(
+                                        alignment=ft.MainAxisAlignment.CENTER,
+                                        spacing=10,
+                                        controls=[
+                                            self.lembrete_input,
+                                            self.horario_input,
+                                            add_button,
+                                        ]
+                                    )
+                                ],
+                                horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                                spacing=10,
+                            ),
+                            bgcolor="#181C20",
+                            border_radius=8,
+                            padding=20,
+                            margin=ft.margin.only(top=20),
+                        )
+                    ]
+                ),
+                alignment=ft.alignment.center,
+                expand=True,
+                padding=30,
             )
         )
         self.page.update()
@@ -163,10 +191,11 @@ class PainelDeloreanApp:
         while True:
             try:
                 agora = datetime.now()
-                
-                # Atualiza a hora atual
-                self.display_present.controls[1].value = formatar_data(agora)
-                
+                # Atualiza todos os relógios com segundos em tempo real
+                self.display_present.content.controls[1].value = formatar_data(agora)
+                self.display_destination.content.controls[1].value = formatar_data(self.destination_time)
+                self.display_last_departed.content.controls[1].value = formatar_data(self.last_departed_time)
+
                 # Verifica se há lembretes para disparar
                 lembretes_a_remover = []
                 with self.lock:
@@ -175,7 +204,7 @@ class PainelDeloreanApp:
                         if agora >= tempo_lembrete:
                             self.page.run_threadsafe(self.mostrar_dialogo, "Lembrete!", texto)
                             lembretes_a_remover.append(lembrete)
-                
+
                 if lembretes_a_remover:
                     with self.lock:
                         for lembrete in lembretes_a_remover:
@@ -184,7 +213,6 @@ class PainelDeloreanApp:
                 self.page.update()
             except Exception as e:
                 print(f"Erro no loop de atualização: {e}")
-            
             time.sleep(1)
 
 # --- Ponto de Entrada da Aplicação ---
