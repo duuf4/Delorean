@@ -32,6 +32,7 @@ class PainelDeloreanApp:
         self.destination_time = datetime.now()
         self.present_time = datetime.now()
         self.last_departed_time = datetime.now()
+        
         self.lembretes = []
         self.lock = threading.Lock()
         self.construir_layout()
