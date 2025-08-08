@@ -186,27 +186,37 @@ class PainelDeloreanApp:
             self.mostrar_dialogo("Lembrete!", texto)
         self.page.update()
 
+    
+
     def atualizar_tempos_em_loop(self):
+        """Loop principal que roda em uma thread separada para atualizar a UI."""
         while True:
-            agora = datetime.now()
-            lembretes_a_remover = []
-            lembretes_para_mostrar = []
-            with self.lock:
-                for lembrete in self.lembretes:
-                    t, texto = lembrete
-                    if agora.replace(microsecond=0) == t.replace(microsecond=0):
-                        lembretes_para_mostrar.append(texto)
-                        lembretes_a_remover.append(lembrete)
-                for lembrete in lembretes_a_remover:
-                    self.lembretes.remove(lembrete)
-                    cursor = self.conn.cursor()
-                    cursor.execute("DELETE FROM lembretes WHERE horario=? AND mensagem=?", (lembrete[0].isoformat(), lembrete[1]))
+            try:
+                agora = datetime.now()
+                # Atualiza todos os relógios com segundos em tempo real
+                self.display_present.content.controls[1].value = formatar_data(agora)
+                self.display_destination.content.controls[1].value = formatar_data(self.destination_time)
+                self.display_last_departed.content.controls[1].value = formatar_data(self.last_departed_time)
+
+                # Verifica se há lembretes para disparar
+                lembretes_a_remover = []
+                with self.lock:
+                                        
+                     for lembrete in self.lembretes:
+                        tempo_lembrete, texto = lembrete
+                        if agora >= tempo_lembrete:
+                            self.mostrar_dialogo("Lembrete!", texto)  # Remova o run_threadsafe
+                            lembretes_a_remover.append(lembrete)   
+
                 if lembretes_a_remover:
-                    self.conn.commit()
-            if self.page:
-                self.page.invoke_method(self._update_ui, agora, lembretes_para_mostrar)
-                #self.page.invoke_later(self._update_ui, agora, lembretes_para_mostrar)
-            time.sleep(0.5)
+                    with self.lock:
+                        for lembrete in lembretes_a_remover:
+                            self.lembretes.remove(lembrete)
+
+                self.page.update()
+            except Exception as e:
+                print(f"Erro no loop de atualização: {e}")
+            time.sleep(1)
 
 def main(page: ft.Page):
     PainelDeloreanApp(page)
