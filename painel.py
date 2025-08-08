@@ -11,7 +11,6 @@ def formatar_data(dt):
         # Retorna um placeholder se a data for Nula
         return "--- -- ---- --:--:-- --"
     # Formato: MÊS DIA ANO HORA:MINUTO:SEGUNDO AM/PM
-    #return dt.strftime("%b %d %Y %I:%M:%S %p").upper()
     return dt.strftime("%b %d %Y %I:%M:%S %p").upper()
 
 # --- Classe Principal da Aplicação ---
@@ -40,43 +39,30 @@ class PainelDeloreanApp:
         self.thread = threading.Thread(target=self.atualizar_tempos_em_loop, daemon=True)
         self.thread.start()
 
-
     def criar_display_tempo(self, titulo: str, cor_texto: str, valor_inicial: str) -> ft.Container:
-        """Cria um bloco de display de tempo padronizado com destaque visual retrô anos 80."""
+        """Cria um bloco de display de tempo padronizado com destaque visual."""
         return ft.Container(
             content=ft.Column(
                 horizontal_alignment=ft.CrossAxisAlignment.CENTER,
                 controls=[
-                    ft.Text(
-                        titulo,
-                        color=cor_texto,
-                        size=18,
-                        weight=ft.FontWeight.BOLD,
-                        font_family="monospace",
-                        # shadow=ft.BoxShadow(blur_radius=4, color=cor_texto, offset=(0, 0)),  # Removido!
-                    ),
+                    ft.Text(titulo, color=cor_texto, size=20, weight=ft.FontWeight.BOLD, font_family="monospace"),
                     ft.Text(
                         valor_inicial,
                         font_family=self.font_family,
                         color=cor_texto,
-                        size=54,
+                        size=48,
                         weight=ft.FontWeight.W_900,
-                        # shadow=ft.BoxShadow(blur_radius=8, color=cor_texto, offset=(0, 0)),  # Removido!
                     ),
                 ]
             ),
-            bgcolor="#000000",  # fundo preto puro
-            border=ft.border.all(5, cor_texto),  # borda grossa neon
-            border_radius=12,
-            padding=24,
-            margin=12,
-            width=380,
+            bgcolor="#222222",
+            border=ft.border.all(3, cor_texto),
+            border_radius=10,
+            padding=20,
+            margin=10,
+            width=340,
             alignment=ft.alignment.center,
-            shadow=ft.BoxShadow(blur_radius=16, color=cor_texto, offset=(0, 0)),  # brilho externo
         )
-# ...existing code...
-
-
 
     def construir_layout(self):
         """Cria e organiza todos os controles na página."""
