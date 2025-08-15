@@ -199,11 +199,6 @@ class PainelDeloreanApp:
                 # Verifica se há lembretes para disparar
                 lembretes_a_remover = []
                 with self.lock:
-                    # for lembrete in self.lembretes:
-                    #     tempo_lembrete, texto = lembrete
-                    #     if agora >= tempo_lembrete:
-                    #         self.mostrar_dialogo("Lembrete!", texto)
-                    #         lembretes_a_remover.append(lembrete)
                     
                      for lembrete in self.lembretes:
                         tempo_lembrete, texto = lembrete
